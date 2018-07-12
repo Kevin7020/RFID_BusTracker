@@ -54,13 +54,13 @@ const char PAGE_NTPConfiguration[] PROGMEM = R"=====(
 </table>
 </form>
 <script>
-	
+
 
 window.onload = function ()
 {
-	load("style.css","css", function() 
+	load("style.css","css", function()
 	{
-		load("microajax.js","js", function() 
+		load("microajax.js","js", function()
 		{
 				setValues("/admin/ntpvalues");
 		});
@@ -76,24 +76,24 @@ function load(e,t,n){if("js"==t){var a=document.createElement("script");a.src=e,
 
 void send_NTP_configuration_html()
 {
-	
-	 
+
+
 	if (server.args() > 0 )  // Save Settings
 	{
 		config.daylight = false;
 		//String temp = "";
 		for ( uint8_t i = 0; i < server.args(); i++ ) {
-			if (server.argName(i) == "ntpserver") config.ntpServerName = urldecode( server.arg(i)); 
-			if (server.argName(i) == "update") config.Update_Time_Via_NTP_Every =  server.arg(i).toInt(); 
-			if (server.argName(i) == "tz") config.timezone =  server.arg(i).toInt(); 
-			if (server.argName(i) == "dst") config.daylight = true; 
+			if (server.argName(i) == "ntpserver") config.ntpServerName = urldecode( server.arg(i));
+			if (server.argName(i) == "update") config.Update_Time_Via_NTP_Every =  server.arg(i).toInt();
+			if (server.argName(i) == "tz") config.timezone =  server.arg(i).toInt();
+			if (server.argName(i) == "dst") config.daylight = true;
 		}
 		WriteConfig();
 		firstStart = true;
 	}
-	server.send ( 200, "text/html", PAGE_NTPConfiguration ); 
-	Serial.println(__FUNCTION__); 
-	
+	server.send ( 200, "text/html", PAGE_NTPConfiguration );
+	Serial.println(__FUNCTION__);
+
 }
 
 
@@ -103,13 +103,13 @@ void send_NTP_configuration_html()
 
 void send_NTP_configuration_values_html()
 {
-		
+
 	String values ="";
 	values += "ntpserver|" + (String) config.ntpServerName + "|input\n";
 	values += "update|" +  (String) config.Update_Time_Via_NTP_Every + "|input\n";
 	values += "tz|" +  (String) config.timezone + "|input\n";
 	values += "dst|" +  (String) (config.daylight ? "checked" : "") + "|chk\n";
 	server.send ( 200, "text/plain", values);
-	Serial.println(__FUNCTION__); 
-	
+	Serial.println(__FUNCTION__);
+	values ="";
 }

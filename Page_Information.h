@@ -9,7 +9,7 @@ const char PAGE_Information[] PROGMEM = R"=====(
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link rel="stylesheet" href="style.css" type="text/css" />
-<script src="microajax.js"></script> 
+<script src="microajax.js"></script>
 <a href="/admin.html"  class="btn btn--s"><</a>&nbsp;&nbsp;<strong>Network Information</strong>
 <hr>
 <table border="0"  cellspacing="0" cellpadding="3" style="width:310px" >
@@ -34,9 +34,9 @@ function GetState()
 
 window.onload = function ()
 {
-	load("style.css","css", function() 
+	load("style.css","css", function()
 	{
-		load("microajax.js","js", function() 
+		load("microajax.js","js", function()
 		{
 				GetState();
 		});
@@ -52,13 +52,12 @@ function load(e,t,n){if("js"==t){var a=document.createElement("script");a.src=e,
 
 //
 // FILL WITH INFOMATION
-// 
+//
 
 void send_information_values_html ()
 {
 
 	String values ="";
-
 	values += "x_ssid|" + (String)WiFi.SSID() +  "|div\n";
 	values += "x_ip|" +  (String) WiFi.localIP()[0] + "." +  (String) WiFi.localIP()[1] + "." +  (String) WiFi.localIP()[2] + "." + (String) WiFi.localIP()[3] +  "|div\n";
 	values += "x_gateway|" +  (String) WiFi.gatewayIP()[0] + "." +  (String) WiFi.gatewayIP()[1] + "." +  (String) WiFi.gatewayIP()[2] + "." + (String) WiFi.gatewayIP()[3] +  "|div\n";
@@ -66,8 +65,8 @@ void send_information_values_html ()
 	values += "x_mac|" + GetMacAddress() +  "|div\n";
 	values += "x_ntp|" +  (String) DateTime.hour + ":" + (String) + DateTime.minute +  ":"  + (String)  DateTime.second + " " + (String)   DateTime.year + "-" + (String)  DateTime.month + "-" + (String)  DateTime.day +  "|div\n";
 	server.send ( 200, "text/plain", values);
-	Serial.println(__FUNCTION__); 
-
+	Serial.println(__FUNCTION__);
+	values ="";
 }
 
 

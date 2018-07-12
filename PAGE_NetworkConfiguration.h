@@ -37,15 +37,15 @@ function GetState()
 }
 function selssid(value)
 {
-	document.getElementById("ssid").value = value; 
+	document.getElementById("ssid").value = value;
 }
 
 
 window.onload = function ()
 {
-	load("style.css","css", function() 
+	load("style.css","css", function()
 	{
-		load("microajax.js","js", function() 
+		load("microajax.js","js", function()
 		{
 					setValues("/admin/values");
 					setTimeout(GetState,3000);
@@ -70,18 +70,18 @@ Please Wait....Configuring and Restarting.
 
 //
 //  SEND HTML PAGE OR IF A FORM SUMBITTED VALUES, PROCESS THESE VALUES
-// 
+//
 
 void send_network_configuration_html()
 {
-	
+
 	if (server.args() > 0 )  // Save Settings
 	{
 		//String temp = "";
 		config.dhcp = false;
 		for ( uint8_t i = 0; i < server.args(); i++ ) {
 			if (server.argName(i) == "ssid") config.ssid =   urldecode(server.arg(i));
-			if (server.argName(i) == "password") config.password =    urldecode(server.arg(i)); 
+			if (server.argName(i) == "password") config.password =    urldecode(server.arg(i));
 			if (server.argName(i) == "ip_0") if (checkRange(server.arg(i))) 	config.IP[0] =  server.arg(i).toInt();
 			if (server.argName(i) == "ip_1") if (checkRange(server.arg(i))) 	config.IP[1] =  server.arg(i).toInt();
 			if (server.argName(i) == "ip_2") if (checkRange(server.arg(i))) 	config.IP[2] =  server.arg(i).toInt();
@@ -100,13 +100,13 @@ void send_network_configuration_html()
 		WriteConfig();
 		ConfigureWifi();
 		AdminTimeOutCounter=0;
-		
+
 	}
 	else
 	{
-		server.send ( 200, "text/html", PAGE_NetworkConfiguration ); 
+		server.send ( 200, "text/html", PAGE_NetworkConfiguration );
 	}
-	Serial.println(__FUNCTION__); 
+	Serial.println(__FUNCTION__);
 }
 
 
@@ -119,6 +119,7 @@ void send_network_configuration_values_html()
 {
 
 	String values ="";
+
 	values += "ssid|" + (String) config.ssid + "|input\n";
 	values += "password|" +  (String) config.password + "|input\n";
 	values += "ip_0|" +  (String) config.IP[0] + "|input\n";
@@ -135,9 +136,8 @@ void send_network_configuration_values_html()
 	values += "gw_3|" +  (String) config.Gateway[3] + "|input\n";
 	values += "dhcp|" +  (String) (config.dhcp ? "checked" : "") + "|chk\n";
 	server.send ( 200, "text/plain", values);
-	Serial.println(__FUNCTION__); 
-  values ="";
-	
+	Serial.println(__FUNCTION__);
+	values ="";
 }
 
 
@@ -168,8 +168,8 @@ void send_connection_state_values_html()
 	 }
 	else
     {
-	 
-		
+
+
 		Networks = "Found " +String(n) + " Networks<br>";
 		Networks += "<table border='0' cellspacing='0' cellpadding='3'>";
 		Networks += "<tr bgcolor='#DDDDDD' ><td><strong>Name</strong></td><td><strong>Quality</strong></td><td><strong>Enc</strong></td><tr>";
@@ -194,11 +194,11 @@ void send_connection_state_values_html()
 		}
 		Networks += "</table>";
 	}
-   
+
 	String values ="";
 	values += "connectionstate|" +  state + "|div\n";
 	values += "networks|" +  Networks + "|div\n";
 	server.send ( 200, "text/plain", values);
 	Serial.println(__FUNCTION__);
-  values ="";
+	values ="";
 }

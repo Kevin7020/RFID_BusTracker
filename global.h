@@ -2,27 +2,23 @@
 #define GLOBAL_H
 
 ESP8266WebServer server(80);									// The Webserver
-//HTTPClient httpclient;                      // The Webclient from the ESP8266HTTPClient.h library(Used for the clients)
 boolean firstStart = true;										// On firststart = true, NTP will try to get a valid time
 int AdminTimeOutCounter = 0;									// Counter for Disabling the AdminMode
-strDateTime DateTime;										     	// Global DateTime structure, will be refreshed every Second
-WiFiUDP UDPNTPClient;									    		// NTP Client
+strDateTime DateTime;											    // Global DateTime structure, will be refreshed every Second
+WiFiUDP UDPNTPClient;										    	// NTP Client
 unsigned long UnixTimestamp = 0;							// GLOBALTIME  ( Will be set by NTP)
 boolean Refresh = false;                      // For Main Loop, to refresh things like GPIO / WS2812
-int cNTP_Update = 0;											    // Counter for Updating the time via NTP
-Ticker tkSecond;										      		// Second - Timer for Updating Datetime Structure
-Ticker tm;										              	// Scheduler - Timer for Updating clients status Structure
-boolean AdminEnabled = true;	               	// Enable Admin Mode for a given Time
-byte Minute_Old = 100;				                // Helpvariable for checking, when a new Minute comes up (for Auto Turn On / Off)
+int cNTP_Update = 0;									    		// Counter for Updating the time via NTP
+Ticker tkSecond;												      // Second - Timer for Updating Datetime Structure
+boolean AdminEnabled = true;		              // Enable Admin Mode for a given Time
+byte Minute_Old = 100;			                  // Helpvariable for checking, when a new Minute comes up (for Auto Turn On / Off)
 
 struct clients {                              // Structure of variables to be sent back to the HTML
   String name;
   String status;
 };
 
-clients Parada1;
-clients Parada2;
-clients Parada3;
+clients parada;
 
 struct strConfig {
   String ssid;
@@ -55,22 +51,13 @@ struct strConfig {
 */
 void ConfigureWifi()
 {
+  Serial.println(F("Configuring Wifi"));
   WiFi.begin (config.ssid.c_str(), config.password.c_str());
   if (!config.dhcp)
   {
     WiFi.config(IPAddress(config.IP[0], config.IP[1], config.IP[2], config.IP[3] ),  IPAddress(config.Gateway[0], config.Gateway[1], config.Gateway[2], config.Gateway[3] ) , IPAddress(config.Netmask[0], config.Netmask[1], config.Netmask[2], config.Netmask[3] ));
   }
 }
-
-/*
-void WifiStatus() {
-if (WiFi.status() == WL_CONNECTED) {
-Serial.println(F("Hotspot Connected"));
-} else {
-Serial.println(F("Hotspot not Connected"));
-}
-}
-*/
 
 void WriteConfig()
 {
@@ -124,7 +111,8 @@ void WriteConfig()
 
   EEPROM.commit();
 }
-boolean ReadConfig() {
+boolean ReadConfig()
+{
 
   Serial.println(F("Reading Configuration"));
   if (EEPROM.read(0) == 'C' && EEPROM.read(1) == 'F'  && EEPROM.read(2) == 'G' )
@@ -184,12 +172,19 @@ boolean ReadConfig() {
 
 const int NTP_PACKET_SIZE = 48;
 byte packetBuffer[ NTP_PACKET_SIZE];
-void NTPRefresh() {
+void NTPRefresh()
+{
+
+
+
+
   if (WiFi.status() == WL_CONNECTED)
   {
     IPAddress timeServerIP;
     WiFi.hostByName(config.ntpServerName.c_str(), timeServerIP);
     //sendNTPpacket(timeServerIP); // send an NTP packet to a time server
+
+
     Serial.println(F("sending NTP packet..."));
     memset(packetBuffer, 0, NTP_PACKET_SIZE);
     packetBuffer[0] = 0b11100011;   // LI, Version, Mode
@@ -203,6 +198,8 @@ void NTPRefresh() {
     UDPNTPClient.beginPacket(timeServerIP, 123);
     UDPNTPClient.write(packetBuffer, NTP_PACKET_SIZE);
     UDPNTPClient.endPacket();
+
+
     delay(1000);
 
     int cb = UDPNTPClient.parsePacket();
@@ -232,14 +229,14 @@ void Second_Tick()
   UnixTimestamp++;
   ConvertUnixTimeStamp(UnixTimestamp +  (config.timezone *  360) , &tempDateTime);
   if (config.daylight) // Sommerzeit beachten
-  if (summertime(tempDateTime.year, tempDateTime.month, tempDateTime.day, tempDateTime.hour, 0))
-  {
-    ConvertUnixTimeStamp(UnixTimestamp +  (config.timezone *  360) + 3600, &DateTime);
-  }
-  else
-  {
-    DateTime = tempDateTime;
-  }
+    if (summertime(tempDateTime.year, tempDateTime.month, tempDateTime.day, tempDateTime.hour, 0))
+    {
+      ConvertUnixTimeStamp(UnixTimestamp +  (config.timezone *  360) + 3600, &DateTime);
+    }
+    else
+    {
+      DateTime = tempDateTime;
+    }
   else
   {
     DateTime = tempDateTime;
@@ -247,136 +244,39 @@ void Second_Tick()
   Refresh = true;
 }
 
-int count = 0;
-void UpdateTime(int toModify) {
-  String min_five(F("ETA 5 min"));
-  String min_four(F("ETA 4 min"));
-  String min_three(F("ETA 3 min"));
-  String min_two(F("ETA 2 min"));
-  String min_one(F("ETA 1 min"));
-  String minl(F("ETA < 1 min"));
-  ++count;
-  if (toModify == 0) {
-    switch (count) {
-      case 1:
-      Parada2.status = min_five;
-      break;
-      case 2:
-      Parada2.status = min_four;
-      break;
-      case 3:
-      Parada2.status = min_three;
-      break;
-      case 4:
-      Parada2.status = min_two;
-      break;
-      case 5:
-      Parada2.status = min_one;
-      break;
-    }
-  } else if (toModify == 1) {
-    switch (count) {
-      case 1:
-      Parada3.status = min_five;
-      break;
-      case 2:
-      Parada3.status = min_four;
-      break;
-      case 3:
-      Parada3.status = min_three;
-      break;
-      case 4:
-      Parada3.status = min_two;
-      break;
-      case 5:
-      Parada3.status = min_one;
-      break;
-    }
-  } else if (toModify == 2) {
-    switch (count) {
-      case 1:
-      Parada1.status = min_five;
-      break;
-      case 2:
-      Parada1.status = min_four;
-      break;
-      case 3:
-      Parada1.status = min_three;
-      break;
-      case 4:
-      Parada1.status = min_two;
-      break;
-      case 5:
-      Parada1.status = min_one;
-      break;
-    }
-  }
-  if (count == 5) {
-    tm.detach();
-    if (!tm.active()) {
-      switch (toModify) {
-        case 0:
-        Parada2.status = minl;
-        break;
-        case 1:
-        Parada3.status = minl;
-        break;
-        case 2:
-        Parada1.status = minl;
-        break;
+bool WebClient(String url, String clientname, String clientstatus) {
+  /*
+      Requiere: url(str) a URL were should it POST i.e http://192.168.1.88:8085/hello
+                clientname(str) a name to send
+                clientstatus(str) a status to send
+      Efect: Makes a POST to the provided URL
+      Modifies:
+  */
+  if (WiFi.status() == WL_CONNECTED) {                                                             //wait for WiFi connection
+    HTTPClient http;                                                                               // The Webclient from the ESP8266HTTPClient.h library
+    Serial.println(F("POST Data!"));
+    http.begin(url);                                                                               //Specify request destination from the parameter URL(str)
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");                           //Specify content-type header
+    http.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+    http.addHeader("NULL", "NULL");
+    String HttPostData = "client=" + clientname + "&status=" + clientstatus;                       //Parse the POST Data to be sent "client=Parada2&status=15 mins"
+    int httpCode = http.POST(HttPostData);                                                         //Start the POST request say=Hi&amp;to=Mom
+
+    if (httpCode > 0) {
+      // httpCode will be negative on error, so if the HTTP header has been sent and the Server response header has been handled,
+      // httpcode will be bigger that cero
+      Serial.printf("POST Status: %d\n", httpCode);
+      if (httpCode == HTTP_CODE_OK) { //HTTP_CODE_OK means 200
+        return true;
+        //http.writeToStream(&Serial);                                                             //DEBUG reply from the server
       }
-      Serial.print(F("Removed ticker N:"));
-      Serial.print(toModify);
-      Serial.print(F("."));
-      Serial.println(count);
-      count = 0;
     } else {
-      Serial.println(F("Err removing ticker!"));
-      count = 0;
+      Serial.printf("POST Failed, error: %s\n", http.errorToString(httpCode).c_str());
+      return false;
     }
-    return;
+    HttPostData = "";
+    http.end();
   }
 }
 
-/*
-*ID2 Parada1 15 --- Parada1 10 --- Parada1  5
-*
-*
-*ID0 Parada2  5 --- Parada2 15 --- Parada2 10
-*
-*
-*ID1 Parada3 10 --- Parada3  5 --- Parada3 15
-*/
-void UpdateDynamicData(void){
-  String min_fifteen(F("ETA 15 min"));
-  String min_ten(F("ETA 10 min"));
-  String min_five(F("ETA 5 min"));
-  String Departed(F("Departed"));
-  String Arrived(F("Arrived"));
-  if (
-    ( (Parada1.status == Arrived)||
-    (Parada2.status == Arrived)||
-    (Parada3.status == Arrived) )&&
-    tm.active() ) {
-      tm.detach();
-    }
-    if (Parada1.status == Departed ){
-      Parada1.status = min_fifteen;
-      Parada3.status = min_ten;
-      Parada2.status = min_five;
-      tm.attach_ms(60000, UpdateTime, 0);
-    }
-    if (Parada2.status == Departed ){
-      Parada2.status = min_fifteen;
-      Parada1.status = min_ten;
-      Parada3.status = min_five;
-      tm.attach_ms(60000, UpdateTime, 1);
-    }
-    if (Parada3.status == Departed ){
-      Parada3.status = min_fifteen;
-      Parada2.status = min_ten;
-      Parada1.status = min_five;
-      tm.attach_ms(60000, UpdateTime, 2);
-    }
-  }
-  #endif
+#endif

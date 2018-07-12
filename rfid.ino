@@ -1,23 +1,22 @@
 /*
- * Server Branch
+ * Clients Branch
  */
 
-#include <ESP8266WiFi.h>                           //Used to connect to other Hotspots
-//#include <ESP8266HTTPClient.h>                     //Client used on the Clients Branch to make POST requests
-#include <ESP8266WebServer.h>                      //Used to Serve a Web server on the network
-#include <Ticker.h>                                //Used to call a given function with a certain period
-#include <EEPROM.h>                                //Used to store configs on non-volatile memory
-#include <WiFiUdp.h>                               //Used for UDP communication between ESP8266 and an external client(In our case a NTP server)
-#include "helpers.h"                               //internal header
-#include "global.h"                                //internal header
-#include <SPI.h>                                   //Used to stabish a SPI connection with an RFID reader
-#include "MFRC522.h"                               //Used to interface with the RFID reader
-
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+#include <ESP8266WebServer.h>
+#include <Ticker.h>
+#include <EEPROM.h>
+#include <WiFiUdp.h>
+#include "helpers.h"
+#include "global.h"
+#include <SPI.h>
+//#include <Wire.h>
+#include "MFRC522.h"
 
 /*
-* Include the HTML, STYLE and Script "Pages"
+  Include the HTML, STYLE and Script "Pages"
 */
-//#include "Page_Root.h"                              //Unused Page
 #include "Backend_Rfid.h"
 #include "Page_Admin.h"
 #include "Page_Script.js.h"
@@ -27,28 +26,39 @@
 #include "Page_rfid.h"
 #include "Page_General.h"
 #include "PAGE_NetworkConfiguration.h"
-//#include "example.h"                               //Example removed from root
 
 
-#define ACCESS_POINT_NAME  "ESP"                   //SSID name of the network created by the ADMIN mode
-#define ACCESS_POINT_PASSWORD  "12345678"          //PASSWORD of the network created by the ADMIN mode
-#define AdminTimeOut 180                           //Defines the Time in Seconds, when the Admin-Mode will be diabled
-#define LED_BUILTIN 2                              //Defines the Pin number of the integrated led on the ESP8266
 
+#define ACCESS_POINT_NAME  "ESP"
+#define ACCESS_POINT_PASSWORD  "12345678"
+#define AdminTimeOut 180  // Defines the Time in Seconds, when the Admin-Mode will be diabled
+#define LED_BUILTIN 2
+//U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 4, /* data=*/ 5);   // pin remapping with ESP8266 HW I2C
+/*
+* I2C Connections to the screen
+* GND  GND
+* 3V3 VCC
+* D1  SDA #1
+* D2  SCL #2
+*/
 void setup ( void ) {
-  pinMode(LED_BUILTIN, OUTPUT);                    //SET the Pin number of the integrated led on the ESP8266 as OUTPUT
-  EEPROM.begin(512);                               //Start the EEPROM object, to read or write data
+  pinMode(LED_BUILTIN, OUTPUT);
+  EEPROM.begin(512);
   Serial.begin(115200);
   delay(500);
-  SPI.begin();                                     //Initialize SPI bus
-  mfrc522.PCD_Init();                              //Initialize MFRC522
+  SPI.begin();           // Init SPI bus
+  /*
+  *u8g2.begin();          // Init I2C bus
+  *u8g2.clearBuffer();					// clear the internal memory
+  *u8g2.setFont(u8g2_font_helvB12_tf);	// choose a suitable font https://github.com/olikraus/u8g2/wiki/fntlistall
+  *u8g2.drawStr(0,20,"Hello World!");	// write something to the internal memory
+  *u8g2.sendBuffer();					// transfer internal memory to the display
+  */
+  mfrc522.PCD_Init();    // Init MFRC522
   Serial.println(F("Starting ES8266"));
   if (!ReadConfig())
   {
-    // Requieres: WriteConfig, EEPROM, ReadConfig
-    // Efect: If ReadConfig states that theres no config saved,
-    //        then it writes a default config.
-    // Modifies: config structure, and EEPROM data (declared on global.h)
+    // DEFAULT CONFIG
     config.ssid = "SSID to connect to";
     config.password = "PASSWORD to connect to the given SSID";
     config.dhcp = true;
@@ -71,36 +81,28 @@ void setup ( void ) {
   }
 
 
-  if (AdminEnabled){
-    // Requieres: AdminEnabled, WiFi(object)
-    // Efect: Checks if the ADMIN mode is enabled,
-    //        if so starts the ADMIN wifi network and turns on the bultin led.
-    // Modifies: LED_BUILTIN status and the Wifi(object)
+  if (AdminEnabled)
+  {
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP( ACCESS_POINT_NAME , ACCESS_POINT_PASSWORD);
     digitalWrite(LED_BUILTIN, LOW);
-  } else {
+  }
+  else
+  {
     WiFi.mode(WIFI_STA);
   }
 
-  ConfigureWifi();                                 //Tries to connect to the network saved on the settings
+  ConfigureWifi();
 
-  /*  //Removed pages from the root of the server "/"
-      server.on ( "/", processExample  );
-      server.on ( "/admin/filldynamicdata", filldynamicdata );
-      server.on ( "/example.html", []() { server.send ( 200, "text/html", PAGE_EXAMPLE );  } );
-  */
-  /*
-  *   server.on ( "URL",   []() {                  //Do something when a client request 'URL'
-  *   Serial.println(F("URL"));                    //Print the URL requested on the Serial
-  *   server.send ( 200, "text/html", "" );        //Retrun 200(OK) ,the formating of our reply , the reply its self (in this case nothing)
-  *   }  );                                        //More can be fount at: https://tttapa.github.io/ESP8266/Chap10%20-%20Simple%20Web%20Server.html, https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WebServer/examples
-  */
   server.on ( "/favicon.ico",   []() {
     Serial.println(F("favicon.ico"));
     server.send ( 200, "text/html", "" );
   }  );
-  server.on ( "/", send_RFID_PageOrTake_Post );
+
+  server.on ( "/", []() {
+    Serial.println(F("root.html"));
+    server.send ( 200, "text/html", PAGE_RFID );
+  }  );
   server.on ( "/config.html", send_network_configuration_html );
   server.on ( "/info.html", []() {
     Serial.println(F("info.html"));
@@ -121,25 +123,23 @@ void setup ( void ) {
     server.send ( 200, "text/plain", PAGE_microajax_js );
   } );
 
-  //On the following ones the reply is sent from the function its self,
-  // with server.send ( 200, "text/plain", values);.
   server.on ( "/admin/values", send_network_configuration_values_html );
   server.on ( "/admin/connectionstate", send_connection_state_values_html );
   server.on ( "/admin/infovalues", send_information_values_html );
   server.on ( "/admin/ntpvalues", send_NTP_configuration_values_html );
   server.on ( "/admin/generalvalues", send_general_configuration_values_html);
   server.on ( "/admin/devicename",     send_devicename_value_html);
-  server.on ( "/rfidvalues", send_rfid_values_html);
+  server.on ( "/admin/rfidvalues", send_rfid_values_html);
+
 
   server.onNotFound ( []() {
     Serial.println(F("Page Not Found"));
     server.send ( 400, "text/html", "Welp that can't be found here, try it later" );
   }  );
-
-  server.begin();                                  //Start the WebServer!
+  server.begin();
   Serial.println( "HTTP server started" );
-  tkSecond.attach(1, Second_Tick);                 //Timer for Updating Datetime Structure
-  UDPNTPClient.begin(2390);                        // Port for NTP receiver (UDP object)
+  tkSecond.attach(1, Second_Tick);
+  UDPNTPClient.begin(2390);  // Port for NTP receive
 }
 
 void loop ( void ) {
@@ -192,16 +192,18 @@ void loop ( void ) {
   }
   server.handleClient();
   Tag_reader();
-  UpdateDynamicData();
+
   /*
        Extra code goes here
   */
 
-  /*if (Refresh){
+/*  if (Refresh)
+  {
     Refresh = false;
+    Serial.println(F("Refreshing..."));
     Serial.printf("FreeMem:%d %d:%d:%d %d.%d.%d \n",ESP.getFreeHeap() , DateTime.hour,DateTime.minute, DateTime.second, DateTime.year, DateTime.month, DateTime.day);
-  }*/
-
+  }
+*/
 }
 
 /*

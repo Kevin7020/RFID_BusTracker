@@ -18,7 +18,6 @@ bool _tag_found = false;
   SCK     = GPIO14
   GND     = GND
   3.3V    = 3.3V
-  https://cdn.instructables.com/FCL/V0OG/IVO7W206/FCLV0OGIVO7W206.LARGE.jpg
 */
 
 bool Tag_checker (void) {
@@ -79,22 +78,25 @@ void Tag_reader(void) {
 
   // rising edge
   if ((rfid_tag_present && !rfid_tag_present_prev) && Tag_checker){
-    Parada3.name = config.DeviceName;
-    Parada3.status = (F("Arrived"));
     Serial.println(F("RFID Card found"));
+    parada.status = (F("Arrived"));
+    WebClient("http://192.168.0.28/", config.DeviceName, parada.status);
   }
 
   // falling edge
   if (!rfid_tag_present && rfid_tag_present_prev){
-    Parada3.status = (F("Departed"));
     Serial.println(F("RFID Card Lost"));
+    parada.status = (F("Departed"));
+    WebClient("http://192.168.0.28/", config.DeviceName, parada.status);
   }
 }
+
 /*
 void Tag_reader(void) {
   if ( (! mfrc522.PICC_ReadCardSerial()) && tagRead) {
-    Parada3.status = (F("Departed"));
     Serial.println(F("RFID Card Lost"));
+    parada.status = (F("Departed"));
+    WebClient("http://192.168.0.28/", config.DeviceName, parada.status);
     tagRead = false;
     return;
   }
@@ -111,11 +113,12 @@ void Tag_reader(void) {
   // If the card is present and the Card is redable
   if (Tag_checker) {
     tagRead = true;
-    Parada3.name = config.DeviceName;
-    Parada3.status = (F("Arrived"));
     Serial.println(F("RFID Card found"));
+    parada.status = (F("Arrived"));
+    WebClient("http://192.168.0.28/", config.DeviceName, parada.status);
     delay(2500); //Avoid Overflow of strings on the times variable
   }
+
       //Show some details of the PICC (that is: the tag/card)
        //Serial.print(F("Card UID:"));
        //dump_byte_array(mfrc522.uid.uidByte, mfrc522.uid.size);
